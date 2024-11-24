@@ -18,7 +18,6 @@ public:
 	string purpose;
 	string note;
 	Transaction() {
-
 		this->nameBank = "";
 		this->date = {};
 		this->amount = 0;
@@ -32,19 +31,48 @@ public:
 	void setTransaction(const std::tm& date, const double& amount, const double& balance, const string& purpose);
 	//void setTransaction(const string& nameBank, const std::tm& date, const double& amount,double const& sodu, const string& purpose);
 	void dispalyForManage(); // dung cho manage  
-private:
-	void printDate();
+	void printDate(); 
+	void loadFromFile(istream& file);
+	void WriteToFile(ostream& file);
 };
 
+void Transaction::WriteToFile(ostream& file) {
+	file << this->nameBank << endl;
+	file << this->amount << " " << this->balance << " ";
+	file << std::put_time(&this->date, "%d/%m/%Y");
+	file << " " << standardize(this->purpose) << " " << endl;
+}
+
+void Transaction::loadFromFile(istream& file) {
+	string time;
+	//file.ignore();
+	if (!getline(file, this->nameBank)) {
+		throw std::runtime_error("Error reading history nameBankHistory");
+	}
+	double sodu;
+	file >> this->amount >> this->balance >> time;
+	getline(file, this->purpose);
+	this->date = stringChangeDate(time);
+}
 
 void Transaction::dispalyForManage() {
-	cout << this->nameBank << " ";
+	/*cout <<left<<setw(15)<< this->nameBank << " ";
 	if (this->amount >=0) cout << "+";
 	cout << this->amount << "VND  SD: "<<this->balance<<"VND ";
 	printDate();
 	cout<<" "<< this->purpose << " ";
 	if (!this->note.empty()) cout << " ( " << this->note << " )";
-	cout << endl;
+	cout << endl;*/
+	string tmp = to_string(this->amount);
+	tmp = tmp.substr(0, tmp.find('.') + 3);
+	string ans = to_string(this->balance);
+	ans = ans.substr(0, ans.find('.') + 3);
+	cout << left << setw(20) << this->nameBank << " ";
+	cout << setw(38)
+		<< (this->amount > 0 ? "+" : "") + tmp + "VND "+ "SD:" + ans + "VND ";
+	printDate();
+	if (!standardize(this->purpose).empty()) cout << setw(20) << " " + standardize(this->purpose) << endl;
+	else cout << endl;
 }
 
 void Transaction::inputTransaction() {
@@ -65,12 +93,22 @@ void Transaction::inputTransaction() {
 }
 
 void Transaction::displayTransaction() {
-	printDate();
+	/*printDate();
 	cout << " : ";
 	if (this->amount>=0) cout << "+";
 	cout << this->amount << " VND" <<" SD: " << this->balance<< "VND " << this->purpose;
 	if (!this->note.empty()) cout << " ( " << this->note << " )"; 
-	cout << endl;
+	cout << endl;*/
+	printDate();
+	string tmp = to_string(this->amount);
+	tmp = tmp.substr(0, tmp.find('.') + 3);
+	string ans = to_string(this->balance);
+	ans = ans.substr(0, ans.find('.') + 3);
+	cout << "  ";
+	cout << left;
+	cout << left << setw(38)
+		<< (this->amount > 0 ? "+" : "") + tmp+"VND SD:"+ans+"VND"
+	    << setw(20) << this->purpose << endl;
 }
 
 

@@ -51,7 +51,8 @@ public:
 	void printHistory();
 	void EditBank();
 	void printReport();
-	void loadFromFile(const string& filename);
+	void loadFromFile(istream &file);
+	void WriteToFile(ostream& file);
 	void saveToFile(const string& filename);
 	void Transfer(const string &name,AccountBank &other );
 	void filterTransaction(string purpose); // tra cuu lich su giao dich voi muc dich
@@ -61,10 +62,23 @@ public:
 	string getnameBank();
 	string getAccountNumber(); 
 	string getnameUserBank();
+	bool checkBalance(); // kiem tra tài khoản có số du lớn hơn 20000 không , true nếu balance >
 	//void ReadFromFile(); 
-	friend class Transaction;
 };
 
+void AccountBank::WriteToFile(ostream& file) {
+	file << this->nameBank << endl; // gh ten ngan hang 
+	file << this->accountNumber << endl; // so tai khoan
+	file << this->nameUserbank << endl; // ten chu so huu
+	file << this->balance << endl; // so du tai khoan
+	for (const auto& pur : this->purpose) {
+		file << pur << " ";
+	}
+}
+
+bool AccountBank::checkBalance() {
+	return this->balance > 20000;
+}
 
 string AccountBank::getAccountNumber() {
 	return this->accountNumber;
@@ -79,7 +93,7 @@ string AccountBank::getnameBank() {
 }
 
 void AccountBank::printAccountBank() {
-	cout << this->accountNumber << " " << this->nameBank << " " << this->nameUserbank << " ";
+	cout << this->accountNumber << " " << this->nameBank << " SD:" << this->balance<<"VND "<<endl;
 }
 
 void AccountBank::filterTransaction(const std::tm timeStart, const std::tm timeEnd){
@@ -158,38 +172,14 @@ void AccountBank::saveToFile(const string& filename) {
 	}
 }
 
-void AccountBank::loadFromFile(const string& filename) {
-	ifstream file(filename);
-	if (file.is_open()) {
-		getline(file, this->nameBank); 
-		getline(file, this->accountNumber);
-		getline(file, this->nameUserbank);
-		file >> this->balance;
-		this->purpose.resize(10);
-		for (int i = 0; i < 10; i++) {
-			file >> this->purpose[i];
-			// nhận dữ liệu báo cáo mục đích từ trước
-		}
-		/*int historySize;
-		file >> historySize;*/
-		this->history.clear(); // xóa hết lịch sử giao dịch và cập nhật lại
-		//for (int i = 0; i < historySize; i++) {
-		//	string date;
-		//	double amount;
-		//	file >> date >> amount;
-		//	//file.ignore();
-		//	string dest;
-		//	getline(file, dest);
-		//	//dest = standardize(dest);
-		//	std::tm time = stringChangeDate(date);
-		//	Transaction x; 
-		//	x.setTransaction(time, amount,dest);
-		//	this->history.push_back(x);
-		//}
-		//file.close();
-	}
-	else {
-		cout << "\nKhong the mo file du lieu\n"; 
+void AccountBank::loadFromFile(istream &file) {
+	getline(file, this->nameBank); // ten ngan hang
+	getline(file, this->accountNumber); // stk
+	getline(file, this->nameUserbank); // ten nguoi dung
+	file >> this->balance; // so du tai khoan
+	this->purpose.resize(10);
+	for (int j = 0; j < 10; j++) {
+		file >> this->purpose[j]; // so tien bao cao cho muc dich
 	}
 }
 
@@ -213,7 +203,7 @@ void AccountBank::EditBank() {
 	getline(cin, this->nameBank); 
 	cout << "Nhap so tai khoan ngan hang: "; 
 	getline(cin, this->accountNumber); 
-	cout << "Nhap ten tai khoan: "; 
+	cout << "Nhap ten tai khoan: ";
 	getline(cin, this->nameUserbank);
 	cout << "Cap nhat so tien: "; 
 	cin >> this->balance;
@@ -234,11 +224,12 @@ void AccountBank::printHistory() {
 
 bool AccountBank::updateBalance(const double &data) {
 	if (data == 0) return false ;
+	string nameB = this->accountNumber + this->nameBank;
 	if (data > 0) {
 		this->balance += data; 
 		Transaction x;
 		std::tm ngay = getCurrentDate();
-		x.setTransaction(ngay, data,this->balance,"");
+		x.setTransaction(nameB,ngay, data,this->balance,"");
 		this->history.push_back(x);
 		return true;
 	}
@@ -262,13 +253,13 @@ bool AccountBank::updateBalance(const double &data) {
 			/*string note; 
 			cout << "Ghi chu: ";
 			getline(cin, note);*/
-			giaodich.setTransaction(ngay, data,this->balance,dest);
+			giaodich.setTransaction(nameB,ngay, data,this->balance,dest);
 			this->history.push_back(giaodich);
 			cout << endl;
 			return true; 
 		}
 		else {
-			cout << "\nSo du khong du de thuc hien dao dich!\n\n";
+			cout << "\nSo du khong du de thuc hien giao dich!\n\n";
 			return false; 
 		}
 	}

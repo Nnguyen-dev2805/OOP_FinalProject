@@ -10,6 +10,10 @@ using namespace std;
 // chuan hoa string
 
 
+void printDate(std::tm date) {
+	cout << std::put_time(&date, "%d/%m/%Y");
+}
+
 
 string standardize(string name) {
 	if (name.empty()) return "";
@@ -21,6 +25,7 @@ string standardize(string name) {
 		for (int i = 0; i < tmp.size(); i++) {
 			tmp[i] = tolower(tmp[i]);
 		}
+		if (!tmp.empty()) tmp[0] = toupper(tmp[0]);
 		result = result + tmp + " "; 
 	}
 	if (!result.empty()) {

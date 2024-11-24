@@ -9,6 +9,8 @@ using namespace std;
 
 class Manage {
 private:
+	// tong thu va chi se duoc bao cao hang thang 
+	// 
 	string nameUser; 
 	double balance; 
 	//vector<LendLoan>lendLoan;
@@ -26,24 +28,94 @@ public:
 		this->nameUser = nameUser;
 		this->balance = 0;
 	}
-	void editNameUser();
-	void editBalance();
-	void editManage();
-	void addAccountBank();
-	void addAccountBank( AccountBank Bank); 
-	void deleteAccountBank(); 
+	void editNameUser(); // chinh sua thong tin nguoi dung 
+	void editBalance(); // chinh sua so tien trong ghi chu
+	void editManage(); // chinh sua ca hai
+	void addAccountBank(); // them tai khoan giao dich moi
+	void addAccountBank( AccountBank &Bank);  // them tai khoan moi
+	void deleteAccountBank();  // xoa tai khoan ra khoi danh muc quan ly 
 	//void Transfer();
-	double getBalanceBank(); 
-	double getBalance(); 
-	void updateBalance(); 
-	void addTransaction(const Transaction &trans);
-	void printHistory();
-	void WriteToFile(const string& fileName);
-	void displayManage();
-	void printHistoryBank();
-	void LoadFromFile(const string& filename); 
-	void printReport();
+	double getBalanceBank(); // báo cáo số dư cả tất cả tài khảon thuộc quyền quản lý
+	double getBalance();  // trả về số dư tổng thể
+	void updateBalance();  // thêm giao dịch
+	void addTransaction(const Transaction &trans); // them giao dich
+	void printHistory(); // lich sử giao dịch
+	void WriteToFile(const string& fileName); // ghi file
+	void displayManage(); // thong tin nguoi dung
+	void printHistoryBank(); // in lich su theo tai khoan
+	void LoadFromFile(const string& filename); // dọc file 
+	void printReport(); // báo cáo chi tiêu theo danh mục
+	void filterTransaction(string& purpose); // tra cuu lich su giao dich voi muc dich
+	void filterTransaction(const std::tm timeStart, const std::tm timeEnd); // tra cứu lịch sử giao dịch với khoảng thời gian
+	bool checkBalance(); // kiem tra neu tai khoan lon 20000 return true
+	void printReportBank(); // bao cao chi tieu theo tung tai khoan
 };
+
+void Manage::printReportBank() {
+	if (this->Account.empty()) {
+		cout << "Vui long them tai khoan\n";
+	}
+	else {
+		for (int i = 0; i < this->Account.size(); i++) {
+			cout << "[" << i + 1 << "]" << ". ";
+			this->Account[i].printAccountBank();
+			cout << "SD: " << this->Account[i].getBalance() << " VND" << endl;
+		}
+		cout << "Chon tai khoan theo STT ban muon xem bao cao: ";
+		int choiceBank;
+		cin >> choiceBank;
+		while (choiceBank<1 || choiceBank>this->Account.size()) {
+			cout << "Vui long nhap dung dinh dang: ";
+			cin >> choiceBank;
+		}
+		this->Account[choiceBank - 1].printReport();
+		cout << endl;
+	}
+}
+
+bool Manage::checkBalance() {
+	return this->balance > 20000;
+}
+
+void Manage::filterTransaction(const std::tm timeStart, const std::tm timeEnd) {
+	if (this->history.empty()) {
+		cout << "Chua co giao dich\n";
+	}
+	else {
+		bool check = false;
+		for (int i = 0; i < this->history.size(); i++) {
+			if (compareDate(this->history[i].date, timeStart) >= 0 && compareDate(this->history[i].date, timeEnd) <= 0) {
+				this->history[i].dispalyForManage();
+				check = true;
+			}
+		}
+		if (check == false) {
+			cout << "Khong co giao dich trong khoang thoi gian ";
+			printDate(timeStart);
+			cout << " - ";
+			printDate(timeEnd);
+			cout << endl;
+		}
+	}
+}
+
+void Manage::filterTransaction(string& purpose) {
+	if (this->history.empty()) {
+		cout << "Chua co giao dich\n";
+	}
+	else {
+		bool check=false; 
+		for (int i = 0; i < this->history.size(); i++) {
+			if (this->history[i].purpose == purpose) {
+				this->history[i].dispalyForManage();
+				check = true;
+			}
+		}
+		if (check == false) {
+			cout << "Chua co giao dich cho muc dich " << purpose << endl;
+		}
+	}
+}
 
 void Manage::printReport() {
 	cout << endl;
@@ -115,44 +187,23 @@ void Manage::LoadFromFile(const string& fileName) {
 		}
 		int AccountSize; 
 		file >> AccountSize; // cap nhat so tai khoan dang duoc su dung
-		
-
 		for (int i = 0; i < AccountSize; i++) {
 			file.ignore();
 			AccountBank ans;
-			getline(file, ans.nameBank); // ten ngan hang
-			getline(file, ans.accountNumber); // stk
-			getline(file, ans.nameUserbank); /// ten nguoi dung
-			file >> ans.balance; // so du tai khoan
-			ans.purpose.resize(10);
-			for (int j = 0; j < 10; j++) {
-				file >> ans.purpose[j]; // so tien bao cao cho muc dich
-			}
+			ans.loadFromFile(file);
 			this->Account.push_back(ans);
 		}
 		int HistorySize; 
 		file >> HistorySize; // so giao dich trong lich su
 		file.ignore();
 		for (int i = 0; i < HistorySize; i++) {
-			string nameBankHistory; 
-			double amount;
-			string date;
-			//file.ignore();
-			if (!getline(file, nameBankHistory)) {
-				throw std::runtime_error("Error reading history nameBankHistory");
-			}
-			double sodu;
-			file >> amount >>sodu>>date;
-			string dest; 
-			getline(file, dest);
-			std::tm time = stringChangeDate(date);
 			Transaction x;
-			x.setTransaction(nameBankHistory, time, amount,sodu, dest);
+			x.loadFromFile(file);
 			this->history.push_back(x);
 			for (int j = 0; j < this->Account.size(); j++) {
 				string ans = this->Account[j].accountNumber  + this->Account[j].nameBank;
 				ans = standardize(ans);
-				string nameBank = standardize(nameBankHistory);
+				string nameBank = standardize(x.nameBank);
 				if (ans == nameBank) {
 					this->Account[j].history.push_back(x);
 					break;
@@ -169,9 +220,29 @@ void Manage::printHistoryBank() {
 	}
 	else {
 		for (int i = 0; i < this->Account.size(); i++) {
+			cout << "[" << i + 1 << "]" << ". ";
 			this->Account[i].printAccountBank();
-			//cout << endl;
-			this->Account[i].printHistory();
+			cout << "SD: " << this->Account[i].getBalance() <<" VND" << endl;
+		}
+		cout << "Chon 0 de xem tat ca\n";
+		cout << "Chon tai khoan theo STT ban muon xem lich su: ";
+		int choiceBank;
+		cin >> choiceBank;
+		while(choiceBank<0 || choiceBank>this->Account.size()) {
+			cout << "Vui long hap dung dinh dang: ";
+			cin >> choiceBank;
+		}
+		if (choiceBank == 0) {
+			for (int i = 0; i < this->Account.size(); i++) {
+				this->Account[i].printAccountBank();
+				this->Account[i].printHistory();
+				cout << endl;
+			}
+		}
+		else {
+			this->Account[choiceBank - 1].printAccountBank();
+			this->Account[choiceBank - 1].printHistory();
+			cout << endl;
 		}
 	}
 }
@@ -202,7 +273,7 @@ void Manage::updateBalance() {
 		for (int i = 0; i < this->Account.size(); i++) {
 			cout << "["<<i + 1<<"]" << ". ";
 			this->Account[i].printAccountBank();
-			cout << "So du: " << this->Account[i].getBalance()<<endl;
+			cout << "SD: " << this->Account[i].getBalance()<<" VND" << endl;
 		}
 		cout << endl;
 		int choiceAccount; 
@@ -216,7 +287,7 @@ void Manage::updateBalance() {
 		string nameBank="";
 		nameBank = nameBank + this->Account[choiceAccount - 1].getAccountNumber() + this->Account[choiceAccount - 1].getnameBank();
 		std::tm ngay = getCurrentDate();
-		giaodich.setTransaction(nameBank,ngay, money,this->Account[choiceAccount-1].balance, "");
+		giaodich.setTransaction(nameBank,ngay, money,this->Account[choiceAccount-1].balance+money, "");
 		// neu giao dich thanh conng
 		int indexPurpose = -1;
 		if (this->Account[choiceAccount - 1].updateBalance(money, giaodich,indexPurpose)) {
@@ -234,12 +305,12 @@ void Manage::deleteAccountBank() {
 		cout << "Chua co tai khoan\n";
 	}
 	else {
-		double sum = 0;
+		//double sum = 0;
 		for (int i = 0; i < this->Account.size(); i++) {
 			cout << i+1 << ". ";
 			this->Account[i].printAccountBank();
-			cout << "So du: " << this->Account[i].getBalance();
-			sum += this->Account[i].getBalance();
+			cout << "So du: " << this->Account[i].getBalance()<<"VND "<<endl;
+			//sum += this->Account[i].getBalance();
 		}
 		int deleteBank;
 		cout << "[0] : Quay lai Menu\n";
@@ -287,7 +358,7 @@ double Manage::getBalanceBank() {
 		for (int i = 0; i < this->Account.size(); i++) {
 			cout << endl;
 			this->Account[i].printAccountBank(); 
-			cout << "So du: " << this->Account[i].getBalance();
+			cout << "SD: " << this->Account[i].getBalance()<<"VND";
 			sum += this->Account[i].getBalance();
 		}
 		return sum;
@@ -295,17 +366,10 @@ double Manage::getBalanceBank() {
 }
 
 double Manage::getBalance() {
-	if (this->Account.empty()) return 0; 
-	else {
-		double sum = 0; 
-		for (int i = 0; i < this->Account.size(); i++) {
-			sum += this->Account[i].getBalance();
-		}
-		return sum; 
-	}
+	return this->balance;
 }
 
-void Manage::addAccountBank(AccountBank Bank) {
+void Manage::addAccountBank( AccountBank &Bank) {
 	this->Account.push_back(Bank);
 	cout << "Da them tai tai khoan "; 
 	Bank.printAccountBank();

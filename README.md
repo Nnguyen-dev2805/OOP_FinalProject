@@ -161,7 +161,7 @@ Dự án được tổ chức thành các thư mục và tệp tin như sau:
 ---
 
 ## Video demo
-[Link video demo](#) https://www.youtube.com/watch?v=fLdZVGQxcpg
+Xem video demo tại đây: [YouTube Demo](https://www.youtube.com/watch?v=fLdZVGQxcpg&t=27s)
 
 ---
 
